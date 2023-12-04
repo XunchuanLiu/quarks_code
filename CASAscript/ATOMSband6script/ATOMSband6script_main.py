@@ -17,6 +17,7 @@ from . import ATOMSband6script_initsourceconfig
 import casashell
 
 from casatasks import *
+#from tclean_cli import tclean_cli as tclean
 import casatools.ms
 ms = casatools.ms()
 tb = casatools.table()
