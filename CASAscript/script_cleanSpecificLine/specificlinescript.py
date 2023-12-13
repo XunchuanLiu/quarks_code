@@ -13,7 +13,6 @@ import astropy.table as t
 
 Ts=t.Table.read(os.path.join(os.path.dirname(__file__),'sourcetable.csv'))
 
-
 defaultTM1dirs = [
 "member.uid___A001_X1590_X341e/calibrated/uid___A002_Xfcf230_X2e1.ms",
 "member.uid___A001_X1590_X3417/calibrated/uid___A002_Xfd02fc_X1154.ms",
@@ -26,9 +25,9 @@ defaultTM1dirs = [
 "member.uid___A001_X1590_X3433/calibrated/uid___A002_Xfd02fc_X621.ms.split.cal",
 ]
 
-def splitdata(rowdataroot='../2021.1.00095.S/',
-        line='CH3CNspw1',
-        freqrange=[220225,220870], #MHz in restfreq at LSR (has not been corrected for VLSR)
+def splitdata(rowdataroot='../../2021.1.00095.S/',
+        line='SO2_234187',
+        freqrange=[234156,234223], #MHz in restfreq at LSR (has not been corrected for VLSR)
         TM1dirs=[],
         fields = '',
         overwrite=False,
@@ -72,7 +71,7 @@ def splitdata(rowdataroot='../2021.1.00095.S/',
 def _splitdata( field,
                 TM1fulldir,
                 vlsr=0, #km/s
-                line='CH3CNspw1',
+                line='SO2_234187',
                 freqrange=[], #MHz
                 overwrite=False,
                ):
@@ -82,7 +81,7 @@ def _splitdata( field,
     if not os.path.exists(outdir):
         os.mkdir(outdir)
     elif overwrite:
-        shutil.remove(outdir) #be careful!
+        shutil.rmtree(outdir) #be careful!
         os.mkdir(outdir)
 
     #######split out the .ms file##########
@@ -99,7 +98,10 @@ def _splitdata( field,
         allspwids = ['%i'%i for i in allspwids]
         wins = []
         for j in allspwids:
+            namedex = ms.metadata().fieldnames().index(field)  
+            fieldid = ms.metadata().fieldsforname()[namedex]
             infreq =  ms.cvelfreqs(spwids=int(j), 
+                               fieldids=[fieldid],
                                mode='channel', 
                                width=0, 
                                outframe='LSRK')/1E6
@@ -107,6 +109,7 @@ def _splitdata( field,
                 spwid = spwinfo[j]['SpectralWindowId']
                 index1 = np.argmin(np.abs(infreq-freqrange[0]*(1-vlsr/2.998E5) ))
                 index2 = np.argmin(np.abs(infreq-freqrange[1]*(1-vlsr/2.998E5) ))
+                print('infreq',index1,index2,infreq[index1], infreq[index2])
                 if index1>index2:
                     index1, index2 = index2, index1
                 wins.append('%i:%i~%i' %(spwid,index1,index2))
@@ -117,7 +120,7 @@ def _splitdata( field,
         if 'CORRECTED_DATA' in tb.colnames():
             splitrawdatacolumn = 'corrected'
         tb.close()
-        print("split",TM1fulldir,field,winstr)
+        print("split",TM1fulldir,field,winstr,vlsr)
         split(vis=TM1fulldir,
               outputvis=splitoutfile,
               field=field,
@@ -126,9 +129,9 @@ def _splitdata( field,
     ######################################
 
 def cleanline(field,
-              line='CH3CNspw1',
-              freqrange=[220225.5,220869.5],
-              linefreeflag=[220226,220310,220765,220869],
+              line='SO2_234187',
+              freqrange=[234157.3,234222.3],
+              linefreeflag=[234157.3, 234172.3, 234209.3, 234222.3],
               threshold='20mJy',
               mpiscriptdir = './mpicasarun/',
               ncore=50,
@@ -271,8 +274,6 @@ def cleanline(field,
 
     print(field,'conpleted')
 
-
-
 def run(fields=[],ncore=50,dofields='onlynopipeline'): #dofields: 'all' 'onlynopipeline' or any others
     if len(fields)==0:
         fields_pipeline = ['I08303-4303', 'I08448-4343_1', 'I08448-4343_2', 'I08470-4243', 'I09002-4732', 'I09018-4816', 'I16524-4300', 
@@ -296,7 +297,6 @@ def run(fields=[],ncore=50,dofields='onlynopipeline'): #dofields: 'all' 'onlynop
         if dofields == 'onlynopipeline':
             fields = [i for i in allfields if i not in fields_pipeline]
           
-
     for field in fields:
         threshold='20mJy'
         if field == 'I17441-2822':
